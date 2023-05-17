@@ -1,3 +1,4 @@
+-- DROP DATABASE dbPiquele
 -- CREATE DATABASE dbPiquele
 -- GO
 USE dbPiquele
@@ -5,15 +6,94 @@ GO
 
 CREATE TABLE tbUsuarios
 (
-    idUsuario           INT PRIMARY KEY IDENTITY (1,1),
-    nombreUsuario       VARCHAR(100),
-    correoUsuario       VARCHAR(100) UNIQUE,
-    pass                CHAR(88),
-    fotoUsuario         IMAGE,
-    verificacionEmail   BIT DEFAULT 0,
-    informacionCompleta BIT DEFAULT 0,
-
+    idUsuario         INT PRIMARY KEY IDENTITY (1,1),
+    correoUsuario     VARCHAR(100) UNIQUE,
+    pass              CHAR(88),
+    verificacionEmail BIT DEFAULT 0
 );
+GO
+
+CREATE TABLE tbMunicipios
+(
+    idMunicipio INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
+    municipio   VARCHAR(200) DEFAULT 'San Salvador'
+);
+GO
+
+CREATE TABLE tbClientes
+(
+    idCliente       INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
+    nombreCliente   VARCHAR(150)                   NOT NULL,
+    duiCliente      VARCHAR(10)                    NOT NULL UNIQUE,
+    fechaNacimiento DATE,
+    celular         VARCHAR(10)                    NOT NULL,
+    idMunicipio     INT,
+    idUsuario       INT
+);
+GO
+
+ALTER TABLE tbClientes
+    ADD CONSTRAINT FK_usuario_cliente
+        FOREIGN KEY (idUsuario)
+            REFERENCES tbUsuarios (idUsuario)
+GO
+
+ALTER TABLE tbClientes
+    ADD CONSTRAINT FK_cliente_ciudad
+        FOREIGN KEY (idMunicipio)
+            REFERENCES tbMunicipios (idMunicipio)
+GO
+
+CREATE TABLE tbPuntuacionRepartidores
+(
+    idPuntuacionRepartidor INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
+    puntuacion             FLOAT                          NOT NULL,
+    idCliente              INT
+);
+GO
+
+CREATE TABLE tbRepartidores
+(
+    idRepartidor           INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
+    nombreRepartidor       VARCHAR(150)                   NOT NULL,
+    duiRepartidor          VARCHAR(10)                    NOT NULL UNIQUE,
+    fechaNacimiento        DATE,
+    celular                VARCHAR(10),
+    idMunicipio            INT,
+    idUsuario              INT,
+    estado                 BIT DEFAULT 0,
+    idPuntuacionRepartidor INT
+);
+GO
+
+ALTER TABLE tbRepartidores
+    ADD CONSTRAINT FK_usuario_repartidor
+        FOREIGN KEY (idUsuario)
+            REFERENCES tbUsuarios (idUsuario)
+GO
+
+ALTER TABLE tbRepartidores
+    ADD CONSTRAINT FK_repartidor_ciudad
+        FOREIGN KEY (idMunicipio)
+            REFERENCES tbMunicipios (idMunicipio)
+GO
+
+ALTER TABLE tbRepartidores
+    ADD CONSTRAINT FK_repartidor_puntuacion
+        FOREIGN KEY (idPuntuacionRepartidor)
+            REFERENCES tbPuntuacionRepartidores (idPuntuacionRepartidor)
+GO
+
+CREATE TABLE tbAdmins
+(
+    idAdmin          INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
+    nombreRepartidor VARCHAR(150)                   NOT NULL,
+    idUsuario        INT
+);
+ALTER TABLE tbAdmins
+    ADD CONSTRAINT FK_usuario_admin
+        FOREIGN KEY (idUsuario)
+            REFERENCES tbUsuarios (idUsuario)
 GO
 
 CREATE TABLE tbEntregas
@@ -21,14 +101,14 @@ CREATE TABLE tbEntregas
     idEntrega           INT PRIMARY KEY IDENTITY (1,1),
     activo              BIT,
     posicionCoordenadas VARCHAR(25),
-    idUsuario           INT
+    idRepartidor        INT
 );
 GO
 
 ALTER TABLE tbEntregas
-    ADD CONSTRAINT FK_entregas_usuarios
-        FOREIGN KEY (idUsuario)
-            REFERENCES tbUsuarios (idUsuario)
+    ADD CONSTRAINT FK_entregas_repartidor
+        FOREIGN KEY (idRepartidor)
+            REFERENCES tbRepartidores (idRepartidor)
 GO
 
 CREATE TABLE tbTiendas
@@ -114,16 +194,16 @@ GO
 CREATE TABLE tbResenias
 (
     idResenia     INT PRIMARY KEY IDENTITY (1,1),
-    idUsuario     INT,
+    idCliente     INT,
     idProducto    INT,
     cuerpoResenia VARCHAR(200)
 );
 GO
 
 ALTER TABLE tbResenias
-    ADD CONSTRAINT FK_resenias_usuarios
-        FOREIGN KEY (idUsuario)
-            REFERENCES tbUsuarios (idUsuario)
+    ADD CONSTRAINT FK_resenias_clientes
+        FOREIGN KEY (idCliente)
+            REFERENCES tbClientes (idCliente)
 GO
 
 ALTER TABLE tbResenias
@@ -149,15 +229,17 @@ CREATE TABLE tbPerfilEntrega
     puerta            VARCHAR(10),
     nombreNegocio     VARCHAR(30),
     notaEntrega       VARCHAR(150),
-    idUsuario         INT,
+    estadoEntrega     VARCHAR(20),
+    idRepartidor      INT,
     idOpcionEntrega   INT
 );
 GO
 
+
 ALTER TABLE tbPerfilEntrega
-    ADD CONSTRAINT FK_perfilEntrega_usuarios
-        FOREIGN KEY (idUsuario)
-            REFERENCES tbUsuarios (idUsuario)
+    ADD CONSTRAINT FK_perfilEntrega_cliente
+        FOREIGN KEY (idRepartidor)
+            REFERENCES tbRepartidores (idRepartidor)
 GO
 
 ALTER TABLE tbPerfilEntrega
@@ -172,15 +254,16 @@ CREATE TABLE tbOrdenProductos
     ordenEnviada    BIT,
     fechaCompra     MONEY,
     precioCompra    MONEY,
-    idUsuario       INT,
+    idCliente       INT,
     idPerfilEntrega INT
 );
 
 GO
+
 ALTER TABLE tbOrdenProductos
-    ADD CONSTRAINT FK_ordenProducto_Usuario
-        FOREIGN KEY (idUsuario)
-            REFERENCES tbUsuarios (idUsuario)
+    ADD CONSTRAINT FK_ordenProducto_Cliente
+        FOREIGN KEY (idCliente)
+            REFERENCES tbClientes (idCliente)
 GO
 
 ALTER TABLE tbOrdenProductos
@@ -215,11 +298,33 @@ CREATE TABLE tbCompraItems
     idOrdenProducto        INT
 );
 GO
-
 ALTER TABLE tbCompraItems
     ADD CONSTRAINT FK_compraItem_ordenProducto
         FOREIGN KEY (idOrdenProducto)
             REFERENCES tbOrdenProductos (idOrdenProducto)
 GO
+
+
+CREATE TABLE tbSolicitudes
+(
+    idSolicitud           INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
+    solicitud             BIT DEFAULT 0,
+    nombreTiendaSolicitud VARCHAR(100),
+    descripcionTienda     VARCHAR(200),
+    fechaSolicitud        DATE,
+    imagenTienda          IMAGE,
+    idUsuario             INT
+);
+GO
+
+ALTER TABLE tbSolicitudes
+    ADD CONSTRAINT FK_usuarios_solicitudes
+        FOREIGN KEY (idUsuario)
+            REFERENCES tbUsuarios (idUsuario)
+GO
+
+
+
+
 
 
