@@ -131,11 +131,12 @@ CREATE TABLE tbProductos
 	idProducto INT PRIMARY KEY IDENTITY(1,1),
 	nombreProducto VARCHAR(100),
 	fotoProducto IMAGE,
-	precio MONEY,
-	descripcionProducto VARCHAR(500),
+	detallesProducto VARCHAR(500),
 	presenationProducto VARCHAR(15),
-	cantidadMaxima SMALLINT,
+	calificacioProducto FLOAT,
+	reviews SMALLINT,
 	disponibilidad BIT,
+	cantidadMaxima SMALLINT,
 	idTienda INT
 );
 GO
