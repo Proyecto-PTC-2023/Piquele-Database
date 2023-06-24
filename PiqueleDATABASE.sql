@@ -202,7 +202,7 @@ REFERENCES tbClientes (idCliente)
 GO
 
 ALTER TABLE tbResenias
-ADD CONSTRAINT FK_resenias_productos
+ADD CONSTRAINT FK_resenias_tienda
 FOREIGN KEY (idTienda)
 REFERENCES tbTiendas (idTienda)
 GO
