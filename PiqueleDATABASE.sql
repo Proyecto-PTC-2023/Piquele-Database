@@ -1,5 +1,5 @@
 
----CREATE DATABASE dbPiquele
+--CREATE DATABASE dbPiquele
 GO
 USE dbPiquele
 GO
@@ -209,7 +209,7 @@ GO
 ALTER TABLE tbResenias
 ADD CONSTRAINT FK_resenias_productos
 FOREIGN KEY (idTienda)
-REFERENCES tbTienda (idTienda)
+REFERENCES tbTiendas (idTienda)
 GO
 
 CREATE TABLE tbOpcionEntrega
