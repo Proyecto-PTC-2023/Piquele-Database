@@ -101,10 +101,6 @@ FOREIGN KEY (idRepartidor)
 REFERENCES tbRepartidores (idRepartidor)
 GO
 
-CREATE TABLE tbCategoria(
-	idCategoria INT IDENTITY(1,1) PRIMARY KEY,
-	nombreCategoria VARCHAR(100)
-);
 
 
 CREATE TABLE tbTiendas
@@ -112,7 +108,6 @@ CREATE TABLE tbTiendas
 	idTienda INT PRIMARY KEY IDENTITY(1,1),
 	fotoTienda IMAGE,
 	nombreTienda VARCHAR(50),
-	idCategoria INT,
 	cantidadSucursales INT DEFAULT 1,
 	nombrePropietario VARCHAR (50),
 	telefono VARCHAR(10),
