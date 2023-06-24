@@ -13,21 +13,14 @@ CREATE TABLE tbUsuarios
 );
 GO
 
-CREATE TABLE tbMunicipios
-(
-	idMunicipio INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
-	municipio VARCHAR(200) DEFAULT 'San Salvador'
-);
-GO
-
 CREATE TABLE tbClientes
 (
 	idCliente INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+	foto IMAGE NULL,
 	nombreCliente VARCHAR(150) NOT NULL,
 	duiCliente VARCHAR(10) NOT NULL UNIQUE,
 	fechaNacimiento DATE,
 	celular VARCHAR(10) NOT NULL,
-	idMunicipio INT,
 	idUsuario INT
 );
 GO
@@ -38,11 +31,6 @@ FOREIGN KEY (idUsuario)
 REFERENCES tbUsuarios(idUsuario)
 GO
 
-ALTER TABLE tbClientes
-ADD CONSTRAINT FK_cliente_ciudad
-FOREIGN KEY (idMunicipio)
-REFERENCES tbMunicipios(idMunicipio)
-GO
 
 CREATE TABLE tbPuntuacionRepartidores
 (
@@ -55,11 +43,11 @@ GO
 CREATE TABLE tbRepartidores
 (
 	idRepartidor INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+	foto IMAGE NULL,
 	nombreRepartidor VARCHAR(150) NOT NULL,
 	duiRepartidor VARCHAR(10) NOT NULL UNIQUE,
 	fechaNacimiento DATE,
 	celular VARCHAR(10),
-	idMunicipio INT,
 	idUsuario INT,
 	estado BIT DEFAULT 0,
 	idPuntuacionRepartidor INT
@@ -72,11 +60,6 @@ FOREIGN KEY (idUsuario)
 REFERENCES tbUsuarios(idUsuario)
 GO
 
-ALTER TABLE tbRepartidores
-ADD CONSTRAINT FK_repartidor_ciudad
-FOREIGN KEY (idMunicipio)
-REFERENCES tbMunicipios(idMunicipio)
-GO
 
 ALTER TABLE tbRepartidores
 ADD CONSTRAINT FK_repartidor_puntuacion
@@ -118,18 +101,28 @@ FOREIGN KEY (idRepartidor)
 REFERENCES tbRepartidores (idRepartidor)
 GO
 
+CREATE TABLE tbCategoria(
+	idCategoria INT IDENTITY(1,1) PRIMARY KEY,
+	nombreCategoria VARCHAR(100)
+);
+
+
 CREATE TABLE tbTiendas
 (
 	idTienda INT PRIMARY KEY IDENTITY(1,1),
-	nombreTienda VARCHAR(50),
 	fotoTienda IMAGE,
-	promedioCalificacion FLOAT,
-	numeroDeCalificaciones SMALLINT,
-	especialidad VARCHAR(100),
+	nombreTienda VARCHAR(50),
+	idCategoria INT,
+	cantidadSucursales INT DEFAULT 1,
+	nombrePropietario VARCHAR (50),
+	telefono VARCHAR(10),
+	correo VARCHAR(100),
 	horaApertura SMALLINT,
 	horaCierre SMALLINT,
 	direccionTienda VARCHAR(150),
 	coordenadasTienda VARCHAR(50),
+	promedioCalificacion FLOAT,
+	numeroDeCalificaciones SMALLINT,
 );
 GO
 
@@ -138,12 +131,11 @@ CREATE TABLE tbProductos
 	idProducto INT PRIMARY KEY IDENTITY(1,1),
 	nombreProducto VARCHAR(100),
 	fotoProducto IMAGE,
-	detallesProducto VARCHAR(500),
+	precio MONEY,
+	descripcionProducto VARCHAR(500),
 	presenationProducto VARCHAR(15),
-	calificacioProducto FLOAT,
-	reviews SMALLINT,
-	disponibilidad BIT,
 	cantidadMaxima SMALLINT,
+	disponibilidad BIT,
 	idTienda INT
 );
 GO
@@ -202,7 +194,7 @@ CREATE TABLE tbResenias
 (
 	idResenia INT PRIMARY KEY IDENTITY(1,1),
 	idCliente INT,
-	idProducto INT,
+	idTienda INT,
 	cuerpoResenia VARCHAR(200)
 );
 GO
@@ -215,8 +207,8 @@ GO
 
 ALTER TABLE tbResenias
 ADD CONSTRAINT FK_resenias_productos
-FOREIGN KEY (idProducto)
-REFERENCES tbProductos (idProducto)
+FOREIGN KEY (idTienda)
+REFERENCES tbTienda (idTienda)
 GO
 
 CREATE TABLE tbOpcionEntrega
@@ -317,7 +309,10 @@ CREATE TABLE tbSolicitudes
 	idSolicitud INT IDENTITY(1,1) PRIMARY KEY NOT NULL,
 	solicitud BIT DEFAULT 0,
 	nombreTiendaSolicitud VARCHAR(100),
-	descripcionTienda VARCHAR(200),
+	cantidadSucursales INT DEFAULT 1,
+	nombrePropietario VARCHAR (50),
+	telefono VARCHAR(10),
+	correo VARCHAR(100),
 	fechaSolicitud DATE,
 	imagenTienda IMAGE,
 	idUsuario INT
@@ -329,9 +324,6 @@ ADD CONSTRAINT FK_usuarios_solicitudes
 FOREIGN KEY (idUsuario)
 REFERENCES tbUsuarios(idUsuario)
 GO
-
-
-
 
 CREATE TABLE tbChatSoporte
 (
