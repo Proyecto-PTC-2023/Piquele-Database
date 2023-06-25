@@ -1,8 +1,8 @@
 
---CREATE DATABASE dbPiquele
-GO
-USE dbPiquele
-GO
+-- CREATE DATABASE dbPiquele
+-- GO
+-- USE dbPiquele
+-- GO
 
 CREATE TABLE tbUsuarios
 (
