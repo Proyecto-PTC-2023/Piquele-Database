@@ -1,3 +1,4 @@
+-- USE master;
 -- DROP DATABASE dbPiquele;
 -- CREATE DATABASE dbPiquele
 -- GO
@@ -31,27 +32,35 @@ ALTER TABLE tbClientes
             REFERENCES tbUsuarios (idUsuario)
 GO
 
-
-CREATE TABLE tbPuntuacionRepartidores
+CREATE TABLE tbTipoTransporte
 (
-    idPuntuacionRepartidor INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    puntuacion             FLOAT                          NOT NULL,
-    idCliente              INT
+    idTipoTransporte INT PRIMARY KEY IDENTITY (1,1),
+    nombreTransporte VARCHAR(50)
 );
-GO
+
+INSERT INTO tbTipoTransporte (nombreTransporte)
+VALUES ('Bicicleta'),
+       ('Motocicleta'),
+       ('Automóvil');
+
 
 CREATE TABLE tbRepartidores
 (
-    idRepartidor           INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    foto                   IMAGE                          NULL,
-    nombreRepartidor       VARCHAR(150)                   NOT NULL,
-    duiRepartidor          VARCHAR(10)                    NOT NULL UNIQUE,
-    fechaNacimiento        DATE,
-    celular                VARCHAR(10),
-    idUsuario              INT,
-    estado                 BIT DEFAULT 0,
-    idPuntuacionRepartidor INT
+    idRepartidor             INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
+    idUsuario                INT,
+    idCliente                INT,
+    estado                   BIT  DEFAULT 0,
+    idTipoTransporte         INT,
+    numeroLicencia           VARCHAR(15),
+    fechaVencimientoLicencia DATE,
+    autorizado               BIT  DEFAULT 0,
+    autorizadoDesde          DATE DEFAULT GETDATE(),
 );
+GO
+
+ALTER TABLE tbRepartidores
+    ADD CONSTRAINT FK_tipo_transporte_repartidor
+        FOREIGN KEY (idTipoTransporte) REFERENCES tbTipoTransporte (idTipoTransporte);
 GO
 
 ALTER TABLE tbRepartidores
@@ -60,21 +69,46 @@ ALTER TABLE tbRepartidores
             REFERENCES tbUsuarios (idUsuario)
 GO
 
-
 ALTER TABLE tbRepartidores
-    ADD CONSTRAINT FK_repartidor_puntuacion
-        FOREIGN KEY (idPuntuacionRepartidor)
-            REFERENCES tbPuntuacionRepartidores (idPuntuacionRepartidor)
+    ADD CONSTRAINT FK_cliente_repartidor
+        FOREIGN KEY (idCliente)
+            REFERENCES tbClientes (idCliente)
+GO
+
+CREATE TABLE tbSolicitudRepartidor
+(
+    idSolicitudRepartidor INT PRIMARY KEY IDENTITY (1,1),
+    idRepartidor          INT,
+    fechaSolicitud        DATE,
+    fechaRespuesta        DATE,
+    respuesta             BIT DEFAULT 0,
+    observaciones         VARCHAR(200)
+);
+
+ALTER TABLE tbSolicitudRepartidor
+    ADD CONSTRAINT FK_repartidor_solicitud
+        FOREIGN KEY (idRepartidor)
+            REFERENCES tbRepartidores (idRepartidor)
+GO
+
+-- When insert to tbRepartidores trigger a tbSolicitudRepartidor creation
+CREATE TRIGGER tr_solicitud_repartidor
+    ON tbRepartidores
+    AFTER INSERT
+    AS
+    DECLARE @idRepartidor INT;
+
+    SELECT @idRepartidor = idRepartidor
+    FROM inserted;
+
+    INSERT INTO tbSolicitudRepartidor (idRepartidor, fechaSolicitud)
+    VALUES (@idRepartidor, GETDATE());
 GO
 
 CREATE TABLE tbAdmins
 (
     idAdmin             INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    foto                IMAGE                          NULL,
     nombreAdministrador VARCHAR(150)                   NOT NULL,
-    dui                 VARCHAR(10) UNIQUE,
-    fechaNacimiento     DATE,
-    celular             VARCHAR(10),
     fechaCreacion       DATE DEFAULT GETDATE(),
     idUsuario           INT
 );
@@ -86,40 +120,74 @@ ALTER TABLE tbAdmins
             REFERENCES tbUsuarios (idUsuario)
 GO
 
-CREATE TABLE tbEntregas
-(
-    idEntrega           INT PRIMARY KEY IDENTITY (1,1),
-    activo              BIT,
-    posicionCoordenadas VARCHAR(25),
-    idRepartidor        INT
-);
-GO
-
-ALTER TABLE tbEntregas
-    ADD CONSTRAINT FK_entregas_repartidor
-        FOREIGN KEY (idRepartidor)
-            REFERENCES tbRepartidores (idRepartidor)
-GO
-
-
 CREATE TABLE tbTiendas
 (
-    idTienda               INT PRIMARY KEY IDENTITY (1,1),
-    fotoTienda             IMAGE,
-    nombreTienda           VARCHAR(50),
-    cantidadSucursales     INT DEFAULT 1,
-    nombrePropietario      VARCHAR(50),
-    telefono               VARCHAR(10),
-    correo                 VARCHAR(100),
-    horaApertura           SMALLINT,
-    horaCierre             SMALLINT,
-    direccionTienda        VARCHAR(150),
-    coordenadasTienda      VARCHAR(50),
-    promedioCalificacion   FLOAT,
-    numeroDeCalificaciones SMALLINT,
+    idTienda           INT PRIMARY KEY IDENTITY (1,1),
+    fotoTienda         IMAGE,
+    nombreTienda       VARCHAR(50),
+    cantidadSucursales INT DEFAULT 1,
+    nombrePropietario  VARCHAR(50),
+    telefono           VARCHAR(10),
+    correo             VARCHAR(100),
+    horaApertura       SMALLINT,
+    horaCierre         SMALLINT,
+    direccionTienda    VARCHAR(150),
+    coordenadasTienda  VARCHAR(50),
 );
 GO
 
+CREATE TABLE tbComentarios
+(
+    idComentario     INT PRIMARY KEY IDENTITY (1,1),
+    idCliente        INT,
+    idTienda         INT,
+    comentario       VARCHAR(200),
+    fecha            DATE,
+    calificacionDada FLOAT
+);
+GO
+
+ALTER TABLE tbComentarios
+    ADD CONSTRAINT FK_cliente_comentario
+        FOREIGN KEY (idCliente)
+            REFERENCES tbClientes (idCliente)
+GO
+
+CREATE FUNCTION dbo.GetAverageRating(@idTienda INT)
+    RETURNS DECIMAL(10, 2)
+AS
+BEGIN
+    DECLARE @averageRating DECIMAL(10, 2);
+
+    SELECT @averageRating = AVG(calificacionDada)
+    FROM tbComentarios
+    WHERE idTienda = @idTienda;
+
+    RETURN @averageRating;
+END
+GO
+
+ALTER TABLE tbTiendas
+    ADD promedioCalificacion AS dbo.GetAverageRating(idTienda);
+GO
+
+CREATE FUNCTION dbo.GetRatingCount(@idTienda INT)
+    RETURNS INT
+AS
+BEGIN
+    DECLARE @ratingCount INT;
+
+    SELECT @ratingCount = COUNT(calificacionDada)
+    FROM tbComentarios
+    WHERE idTienda = @idTienda;
+
+    RETURN @ratingCount;
+END
+GO
+
+ALTER TABLE tbTiendas
+    ADD numeroCalificaciones AS dbo.GetRatingCount(idTienda);
+GO
 
 
 CREATE TABLE tbProductos
@@ -132,7 +200,6 @@ CREATE TABLE tbProductos
     precioProducto       MONEY,
     descripcionProducto  VARCHAR(500),
     disponibilidad       BIT,
-    tamano               VARCHAR(15),
     pedidoMaximo         SMALLINT,
     idTienda             INT
 );
@@ -144,6 +211,7 @@ ALTER TABLE tbProductos
             REFERENCES tbTiendas (idTienda)
 GO
 
+
 -- Información específica
 CREATE TABLE tbTamanos
 (
@@ -151,11 +219,13 @@ CREATE TABLE tbTamanos
     nombre     VARCHAR(15),
     idProducto INT
 );
+GO
 
 ALTER TABLE tbTamanos
     ADD CONSTRAINT FK_tamanos_productos
         FOREIGN KEY (idProducto)
-            REFERENCES tbProductos (idProducto)
+            REFERENCES tbProductos (idProducto);
+GO
 
 CREATE TABLE tbTiposProductos
 (
@@ -167,7 +237,8 @@ CREATE TABLE tbTiposProductos
 ALTER TABLE tbTiposProductos
     ADD CONSTRAINT FK_tipos_productos
         FOREIGN KEY (idProducto)
-            REFERENCES tbProductos (idProducto)
+            REFERENCES tbProductos (idProducto);
+GO
 
 
 CREATE TABLE tbTags
@@ -220,99 +291,135 @@ ALTER TABLE tbResenias
             REFERENCES tbTiendas (idTienda)
 GO
 
-CREATE TABLE tbOpcionEntrega
+
+-- Tabla de carritos
+CREATE TABLE tbCarritos
 (
-    idOpcionEntrega          INT PRIMARY KEY IDENTITY (1,1),
-    nombreOpcionEntrega      VARCHAR(100),
-    descripcionOpcionEntrega VARCHAR(100),
-    fotoOpcionEntrega        IMAGE
+    idCarrito INT PRIMARY KEY IDENTITY (1,1),
+    idCliente INT,
+    idNegocio INT,
+    date      DATE DEFAULT GETDATE(),
+    activo    BIT  DEFAULT 1,
+    enviado   BIT  DEFAULT 0,
 );
 GO
 
-CREATE TABLE tbPerfilEntrega
+-- total as a computed column
+CREATE FUNCTION dbo.GetCartTotal(@idCarrito INT)
+    RETURNS DECIMAL(10, 2)
+AS
+BEGIN
+    DECLARE @total DECIMAL(10, 2);
+
+    SELECT @total = SUM(subtotal)
+    FROM tbItemsCarrito
+    WHERE idCarrito = @idCarrito;
+
+    RETURN @total;
+END
+GO
+
+ALTER TABLE tbCarritos
+    ADD total DECIMAL(10, 2) NULL;
+GO
+
+-- Items carrito
+CREATE TABLE tbItemsCarrito
 (
-    idPerfilEntrega   INT IDENTITY (1,1) PRIMARY KEY,
-    coordenadasPerfil VARCHAR(50),
-    direccion         VARCHAR(150),
-    puerta            VARCHAR(10),
-    nombreNegocio     VARCHAR(30),
-    notaEntrega       VARCHAR(150),
-    estadoEntrega     VARCHAR(20),
-    idRepartidor      INT,
-    idOpcionEntrega   INT
+    idItemCarrito  INT PRIMARY KEY IDENTITY (1,1),
+    idCarrito      INT,
+    idProducto     INT,
+    idTamano       INT,
+    idTipoProducto INT,
+    cantidad       INT,
 );
 GO
 
+ALTER TABLE tbItemsCarrito
+    ADD CONSTRAINT FK_itemsCarrito_producto
+        FOREIGN KEY (idProducto)
+            REFERENCES tbProductos (idProducto);
 
-ALTER TABLE tbPerfilEntrega
-    ADD CONSTRAINT FK_perfilEntrega_cliente
-        FOREIGN KEY (idRepartidor)
-            REFERENCES tbRepartidores (idRepartidor)
+ALTER TABLE tbItemsCarrito
+    ADD CONSTRAINT FK_itemsCarrito_tamano
+        FOREIGN KEY (idTamano)
+            REFERENCES tbTamanos (idTamano);
+
+ALTER TABLE tbItemsCarrito
+    ADD CONSTRAINT FK_itemsCarrito_tipoProducto
+        FOREIGN KEY (idTipoProducto)
+            REFERENCES tbTiposProductos (idTipoProducto);
+
+
+
+ALTER TABLE tbItemsCarrito
+    ADD CONSTRAINT FK_itemsCarrito_carrito
+        FOREIGN KEY (idCarrito)
+            REFERENCES tbCarritos (idCarrito);
 GO
 
-ALTER TABLE tbPerfilEntrega
-    ADD CONSTRAINT FK_perfilEntrega_opcionEntrega
-        FOREIGN KEY (idOpcionEntrega)
-            REFERENCES tbOpcionEntrega (idOpcionEntrega)
+-- Subtotal as a computed column
+CREATE FUNCTION dbo.GetSubtotal(@idProducto INT)
+    RETURNS DECIMAL(10, 2)
+AS
+BEGIN
+    DECLARE @subtotal DECIMAL(10, 2);
+
+    SELECT @subtotal = SUM(cantidad * precioProducto)
+    FROM tbProductos,
+         tbItemsCarrito
+    WHERE tbProductos.idProducto = tbItemsCarrito.idProducto
+      AND tbProductos.idProducto = @idProducto;
+
+    RETURN @subtotal;
+END
 GO
 
-CREATE TABLE tbOrdenProductos
-(
-    idOrdenProducto INT PRIMARY KEY IDENTITY (1,1),
-    ordenEnviada    BIT,
-    fechaCompra     MONEY,
-    precioCompra    MONEY,
-    idCliente       INT,
-    idPerfilEntrega INT
-);
-
+ALTER TABLE tbItemsCarrito
+    ADD subtotal DECIMAL(10, 2) NULL;
 GO
 
-ALTER TABLE tbOrdenProductos
-    ADD CONSTRAINT FK_ordenProducto_Cliente
-        FOREIGN KEY (idCliente)
-            REFERENCES tbClientes (idCliente)
+CREATE TRIGGER tr_UpdateItemSubtotal
+    ON tbItemsCarrito
+    AFTER INSERT, UPDATE, DELETE
+    AS
+BEGIN
+    UPDATE tbItemsCarrito
+    SET subtotal = dbo.GetSubtotal(idProducto)
+    WHERE idProducto IN (SELECT idProducto FROM inserted)
+       OR idProducto IN (SELECT idProducto FROM deleted);
+END
 GO
 
-ALTER TABLE tbOrdenProductos
-    ADD CONSTRAINT FK_perfilEntrega
-        FOREIGN KEY (idPerfilEntrega)
-            REFERENCES tbPerfilEntrega (idPerfilEntrega)
-GO
 
 CREATE TABLE tbEnvios
 (
-    idEnvio         INT PRIMARY KEY IDENTITY (1,1),
-    estadoEnvio     SMALLINT,
-    entregasId_s    CHAR(64),
-    idOrdenProducto INT
+    idEnvio      INT PRIMARY KEY IDENTITY (1,1),
+    idRepartidor INT,
+    idCarrito    INT,
+    costoEnvio   MONEY,
+    fechaEnvio   DATE,
+    activo       BIT,
 );
 GO
 
 ALTER TABLE tbEnvios
-    ADD CONSTRAINT FK_orden_envio
-        FOREIGN KEY (idOrdenProducto)
-            REFERENCES tbOrdenProductos (idOrdenProducto)
+    ADD CONSTRAINT FK_envios_carrito
+        FOREIGN KEY (idCarrito)
+            REFERENCES tbCarritos (idCarrito)
+
+ALTER TABLE tbEnvios
+    ADD CONSTRAINT FK_envios_repartidor
+        FOREIGN KEY (idRepartidor)
+            REFERENCES tbRepartidores (idRepartidor)
 GO
 
-CREATE TABLE tbCompraItems
-(
-    idCompraItem           INT PRIMARY KEY IDENTITY (1,1),
-    nombreCompraItem       VARCHAR(100),
-    detalleCompraItem      VARCHAR(300),
-    unidadMedida           VARCHAR(15),
-    nombreOpcionCompraItem VARCHAR(15),
-    precioCompraItem       MONEY,
-    idOrdenProducto        INT
-);
-GO
-ALTER TABLE tbCompraItems
-    ADD CONSTRAINT FK_compraItem_ordenProducto
-        FOREIGN KEY (idOrdenProducto)
-            REFERENCES tbOrdenProductos (idOrdenProducto)
+-- Repartidor asignado bit based on the idRepartidor
+ALTER TABLE tbEnvios
+    ADD repartidorAsignado AS (CASE WHEN idRepartidor IS NULL THEN 0 ELSE 1 END);
 GO
 
-
+--------------------------
 CREATE TABLE tbSolicitudesNegocios
 (
     idSolicitud           INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
@@ -335,85 +442,4 @@ ALTER TABLE tbSolicitudesNegocios
     ADD CONSTRAINT FK_usuarios_solicitudes
         FOREIGN KEY (idUsuario)
             REFERENCES tbUsuarios (idUsuario)
-GO
-
-CREATE TABLE tbChatSoporte
-(
-    idChatSoporte INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    fecha         DATETIME DEFAULT GETDATE(),
-);
-GO
-
-CREATE TABLE tbUsuariosChat
-(
-    idUsuariosChat INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    idCliente      INT,
-    idRepartidor   INT,
-    idTienda       INT,
-    idUsuario      INT,
-    idChatSoporte  INT
-);
-GO
-
-ALTER TABLE tbUsuariosChat
-    ADD CONSTRAINT FK_chatUsuario_cliente
-        FOREIGN KEY (idCliente)
-            REFERENCES tbClientes (idCliente)
-GO
-
-ALTER TABLE tbUsuariosChat
-    ADD CONSTRAINT FK_chatUsuario_repartidor
-        FOREIGN KEY (idRepartidor)
-            REFERENCES tbRepartidores (idRepartidor)
-GO
-
-ALTER TABLE tbUsuariosChat
-    ADD CONSTRAINT FK_chatUsuario_tienda
-        FOREIGN KEY (idTienda)
-            REFERENCES tbTiendas (idTienda)
-GO
-
-ALTER TABLE tbUsuariosChat
-    ADD CONSTRAINT FK_chatUsuario_admin
-        FOREIGN KEY (idUsuario)
-            REFERENCES tbUsuarios (idUsuario)
-GO
-
-ALTER TABLE tbUsuariosChat
-    ADD CONSTRAINT FK_chatUsuario_chatSoporte
-        FOREIGN KEY (idChatSoporte)
-            REFERENCES tbChatSoporte (idChatSoporte)
-GO
-
-CREATE TABLE tbTipoMensajeS
-(
-    idTipoMensaje INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    nombre        VARCHAR(50)
-);
-INSERT INTO tbTipoMensajeS (nombre)
-VALUES ('Mensaje de texto'),
-       ('Audio'),
-       ('Foto');
-
-
-CREATE TABLE tbMensajesChat
-(
-    idMensajeChat  INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    idUsuariosChat INT,
-    fechaMensaje   DATETIME DEFAULT GETDATE(),
-    mensaje        VARCHAR(MAX),
-    idTipoMensaje  INT UNIQUE,
-    ulrMensaje     VARCHAR(2000)
-);
-
-ALTER TABLE tbMensajesChat
-    ADD CONSTRAINT FK_mensaje_usuario_chat
-        FOREIGN KEY (idUsuariosChat)
-            REFERENCES tbUsuariosChat (idUsuariosChat)
-GO
-
-ALTER TABLE tbMensajesChat
-    ADD CONSTRAINT FK_mensaje_tipo
-        FOREIGN KEY (idTipoMensaje)
-            REFERENCES tbTipoMensajeS (idTipoMensaje)
 GO
