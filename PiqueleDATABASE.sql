@@ -17,7 +17,7 @@ GO
 CREATE TABLE tbClientes
 (
     idCliente       INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    foto            IMAGE                          NULL,
+    foto            VARBINARY(max)                 NULL,
     nombreCliente   VARCHAR(150)                   NOT NULL,
     duiCliente      VARCHAR(10)                    NOT NULL UNIQUE,
     fechaNacimiento DATE,
@@ -120,27 +120,40 @@ ALTER TABLE tbAdmins
             REFERENCES tbUsuarios (idUsuario)
 GO
 
-CREATE TABLE tbTiendas
+CREATE TABLE tbNegocios
 (
-    idTienda           INT PRIMARY KEY IDENTITY (1,1),
-    fotoTienda         IMAGE,
-    nombreTienda       VARCHAR(50),
+    idNegocio          INT PRIMARY KEY IDENTITY (1,1),
+    fotoNegocio        VARBINARY(max),
+    nombreNegocio      VARCHAR(50),
     cantidadSucursales INT DEFAULT 1,
-    nombrePropietario  VARCHAR(50),
+    idUsuario          INT,
+    idCliente          INT,
     telefono           VARCHAR(10),
     correo             VARCHAR(100),
     horaApertura       SMALLINT,
     horaCierre         SMALLINT,
-    direccionTienda    VARCHAR(150),
-    coordenadasTienda  VARCHAR(50),
+    direccionNegocio   VARCHAR(150),
+    coordenadasNegocio VARCHAR(50),
 );
+GO
+
+ALTER TABLE tbNegocios
+    ADD CONSTRAINT FK_usuario_Negocios
+        FOREIGN KEY (idUsuario)
+            REFERENCES tbUsuarios (idUsuario);
+GO
+
+ALTER TABLE tbNegocios
+    ADD CONSTRAINT FK_cliente_Negocios
+        FOREIGN KEY (idCliente)
+            REFERENCES tbClientes (idCliente);
 GO
 
 CREATE TABLE tbComentarios
 (
     idComentario     INT PRIMARY KEY IDENTITY (1,1),
     idCliente        INT,
-    idTienda         INT,
+    idNegocio        INT,
     comentario       VARCHAR(200),
     fecha            DATE,
     calificacionDada FLOAT
@@ -148,12 +161,18 @@ CREATE TABLE tbComentarios
 GO
 
 ALTER TABLE tbComentarios
+    ADD CONSTRAINT FK_Negocio_comentario
+        FOREIGN KEY (idNegocio)
+            REFERENCES tbNegocios (idNegocio);
+
+
+ALTER TABLE tbComentarios
     ADD CONSTRAINT FK_cliente_comentario
         FOREIGN KEY (idCliente)
             REFERENCES tbClientes (idCliente)
 GO
 
-CREATE FUNCTION dbo.GetAverageRating(@idTienda INT)
+CREATE FUNCTION dbo.GetAverageRating(@idNegocio INT)
     RETURNS DECIMAL(10, 2)
 AS
 BEGIN
@@ -161,17 +180,17 @@ BEGIN
 
     SELECT @averageRating = AVG(calificacionDada)
     FROM tbComentarios
-    WHERE idTienda = @idTienda;
+    WHERE idNegocio = @idNegocio;
 
     RETURN @averageRating;
 END
 GO
 
-ALTER TABLE tbTiendas
-    ADD promedioCalificacion AS dbo.GetAverageRating(idTienda);
+ALTER TABLE tbNegocios
+    ADD promedioCalificacion AS dbo.GetAverageRating(idNegocio);
 GO
 
-CREATE FUNCTION dbo.GetRatingCount(@idTienda INT)
+CREATE FUNCTION dbo.GetRatingCount(@idNegocio INT)
     RETURNS INT
 AS
 BEGIN
@@ -179,14 +198,14 @@ BEGIN
 
     SELECT @ratingCount = COUNT(calificacionDada)
     FROM tbComentarios
-    WHERE idTienda = @idTienda;
+    WHERE idNegocio = @idNegocio;
 
     RETURN @ratingCount;
 END
 GO
 
-ALTER TABLE tbTiendas
-    ADD numeroCalificaciones AS dbo.GetRatingCount(idTienda);
+ALTER TABLE tbNegocios
+    ADD numeroCalificaciones AS dbo.GetRatingCount(idNegocio);
 GO
 
 
@@ -197,26 +216,25 @@ CREATE TABLE tbProductos
     fotoProducto         VARBINARY(MAX),
     presentacionProducto VARCHAR(15),
     vecesComprado        INT,
-    precioProducto       MONEY,
     descripcionProducto  VARCHAR(500),
     disponibilidad       BIT,
     pedidoMaximo         SMALLINT,
-    idTienda             INT
+    idNegocio            INT
 );
 GO
 
 ALTER TABLE tbProductos
-    ADD CONSTRAINT FK_productos_tienda
-        FOREIGN KEY (idTienda)
-            REFERENCES tbTiendas (idTienda)
+    ADD CONSTRAINT FK_productos_Negocio
+        FOREIGN KEY (idNegocio)
+            REFERENCES tbNegocios (idNegocio)
 GO
-
 
 -- Información específica
 CREATE TABLE tbTamanos
 (
     idTamano   INT PRIMARY KEY IDENTITY (1,1),
     nombre     VARCHAR(15),
+    precio     DECIMAL(10, 2),
     idProducto INT
 );
 GO
@@ -270,28 +288,6 @@ ALTER TABLE tbProductosTag
             REFERENCES tbProductos (idProducto)
 GO
 
-CREATE TABLE tbResenias
-(
-    idResenia     INT PRIMARY KEY IDENTITY (1,1),
-    idCliente     INT,
-    idTienda      INT,
-    cuerpoResenia VARCHAR(200)
-);
-GO
-
-ALTER TABLE tbResenias
-    ADD CONSTRAINT FK_resenias_clientes
-        FOREIGN KEY (idCliente)
-            REFERENCES tbClientes (idCliente)
-GO
-
-ALTER TABLE tbResenias
-    ADD CONSTRAINT FK_resenias_tienda
-        FOREIGN KEY (idTienda)
-            REFERENCES tbTiendas (idTienda)
-GO
-
-
 -- Tabla de carritos
 CREATE TABLE tbCarritos
 (
@@ -344,12 +340,13 @@ ALTER TABLE tbItemsCarrito
     ADD CONSTRAINT FK_itemsCarrito_tamano
         FOREIGN KEY (idTamano)
             REFERENCES tbTamanos (idTamano);
+GO
 
 ALTER TABLE tbItemsCarrito
     ADD CONSTRAINT FK_itemsCarrito_tipoProducto
         FOREIGN KEY (idTipoProducto)
             REFERENCES tbTiposProductos (idTipoProducto);
-
+GO
 
 
 ALTER TABLE tbItemsCarrito
@@ -358,6 +355,8 @@ ALTER TABLE tbItemsCarrito
             REFERENCES tbCarritos (idCarrito);
 GO
 
+-- Get precioProducto from tbTamano
+
 -- Subtotal as a computed column
 CREATE FUNCTION dbo.GetSubtotal(@idProducto INT)
     RETURNS DECIMAL(10, 2)
@@ -365,11 +364,13 @@ AS
 BEGIN
     DECLARE @subtotal DECIMAL(10, 2);
 
-    SELECT @subtotal = SUM(cantidad * precioProducto)
+    SELECT @subtotal = SUM(cantidad * tbTamanos.precio)
     FROM tbProductos,
-         tbItemsCarrito
+         tbItemsCarrito,
+         tbTamanos
     WHERE tbProductos.idProducto = tbItemsCarrito.idProducto
-      AND tbProductos.idProducto = @idProducto;
+      AND tbProductos.idProducto = @idProducto
+      AND tbProductos.idProducto = tbTamanos.idProducto;
 
     RETURN @subtotal;
 END
@@ -424,7 +425,7 @@ CREATE TABLE tbSolicitudesNegocios
 (
     idSolicitud           INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
     solicitud             BIT DEFAULT 0,
-    nombreTienda          VARCHAR(100),
+    nombreNegocio         VARCHAR(100),
     especialidadesNegocio VARCHAR(100),
     cantidadSucursales    INT DEFAULT 1,
     nombrePropietario     VARCHAR(50),
@@ -433,7 +434,7 @@ CREATE TABLE tbSolicitudesNegocios
     fechaSolicitud        DATE,
     horaApertura          TIME,
     horaCierre            TIME,
-    imagenTienda          VARBINARY(MAX),
+    imagenNegocio         VARBINARY(MAX),
     idUsuario             INT
 );
 GO
