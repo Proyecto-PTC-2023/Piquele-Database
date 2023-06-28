@@ -7,10 +7,11 @@
 
 CREATE TABLE tbUsuarios
 (
-    idUsuario         INT PRIMARY KEY IDENTITY (1,1),
-    correoUsuario     VARCHAR(100) UNIQUE,
-    pass              CHAR(88),
-    verificacionEmail BIT DEFAULT 0
+    idUsuario          INT PRIMARY KEY IDENTITY (1,1),
+    correoUsuario      VARCHAR(100) UNIQUE,
+    pass               CHAR(88),
+    verificacionEmail  BIT DEFAULT 0,
+    codigoVerificacion VARCHAR(255),
 );
 GO
 
@@ -31,6 +32,24 @@ ALTER TABLE tbClientes
         FOREIGN KEY (idUsuario)
             REFERENCES tbUsuarios (idUsuario)
 GO
+
+CREATE TABLE tbDireccionesCliente
+(
+    idDireccion           INT PRIMARY KEY IDENTITY (1,1),
+    idCliente             INT,
+    titulo                VARCHAR(50),
+    direccion             VARCHAR(150),
+    latitud               VARCHAR(50),
+    longitud              VARCHAR(50),
+    numeroInmueble        VARCHAR(10),
+    indicacionesDeEntrega VARCHAR(200),
+    telefono              VARCHAR(10)
+);
+
+ALTER TABLE tbDireccionesCliente
+    ADD CONSTRAINT FK_cliente_direccion
+        FOREIGN KEY (idCliente)
+            REFERENCES tbClientes (idCliente)
 
 CREATE TABLE tbTipoTransporte
 (
