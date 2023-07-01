@@ -423,14 +423,19 @@ CREATE TABLE tbEnvios
     idCarrito    INT,
     costoEnvio   MONEY,
     fechaEnvio   DATE,
+	pedidoListo  BIT,
     activo       BIT,
 );
+GO
+
+ALTER TABLE tbEnvios ADD CONSTRAINT U_pedidoListo DEFAULT 0 FOR pedidoListo
 GO
 
 ALTER TABLE tbEnvios
     ADD CONSTRAINT FK_envios_carrito
         FOREIGN KEY (idCarrito)
             REFERENCES tbCarritos (idCarrito)
+GO
 
 ALTER TABLE tbEnvios
     ADD CONSTRAINT FK_envios_repartidor
