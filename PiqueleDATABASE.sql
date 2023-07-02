@@ -415,6 +415,13 @@ BEGIN
 END
 GO
 
+CREATE TABLE tbEstadoEnvios(
+	idEstadoEnvio INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+	estado VARCHAR(50)
+);
+
+INSERT INTO tbEstadoEnvios VALUES('Preparando'),('Recogiendo'),('Entregado'),('Cancelado');
+
 
 CREATE TABLE tbEnvios
 (
@@ -425,6 +432,7 @@ CREATE TABLE tbEnvios
     fechaEnvio   DATE,
 	pedidoListo  BIT,
     activo       BIT,
+	idEstadoEnvio INT
 );
 GO
 
@@ -441,6 +449,12 @@ ALTER TABLE tbEnvios
     ADD CONSTRAINT FK_envios_repartidor
         FOREIGN KEY (idRepartidor)
             REFERENCES tbRepartidores (idRepartidor)
+GO
+
+ALTER TABLE tbEnvios
+    ADD CONSTRAINT FK_envio_estado
+        FOREIGN KEY (idEstadoEnvio)
+            REFERENCES tbEstadoEnvios (idEstadoEnvio)
 GO
 
 -- Repartidor asignado bit based on the idRepartidor
