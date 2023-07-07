@@ -1,6 +1,6 @@
 -- USE master;
 -- DROP DATABASE dbPiquele;
--- CREATE DATABASE dbPiquele
+-- CREATE DATABASE dbPiquele;
 -- GO
 -- USE dbPiquele
 -- GO
@@ -9,7 +9,7 @@ CREATE TABLE tbUsuarios
 (
     idUsuario          INT PRIMARY KEY IDENTITY (1,1),
     correoUsuario      VARCHAR(100) UNIQUE,
-    pass               CHAR(88),
+    pass               CHAR(600),
     verificacionEmail  BIT  DEFAULT 0,
     codigoVerificacion VARCHAR(255),
     registradoDesde    DATE DEFAULT GETDATE(),
@@ -21,12 +21,12 @@ GO
 
 CREATE TABLE tbClientes
 (
-    idCliente       INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    foto            VARBINARY(max)                 NULL,
-    nombreCliente   VARCHAR(150)                   NOT NULL,
-    duiCliente      VARCHAR(10)                    NOT NULL UNIQUE,
+    idCliente       INT IDENTITY (1,1) PRIMARY KEY,
+    foto            VARBINARY(max),
+    nombreCliente   VARCHAR(150),
+    duiCliente      VARCHAR(10) UNIQUE,
     fechaNacimiento DATE,
-    celular         VARCHAR(10)                    NOT NULL,
+    celular         VARCHAR(10),
     idUsuario       INT
 );
 GO
@@ -415,28 +415,34 @@ BEGIN
 END
 GO
 
-CREATE TABLE tbEstadoEnvios(
-	idEstadoEnvio INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-	estado VARCHAR(50)
+CREATE TABLE tbEstadoEnvios
+(
+    idEstadoEnvio INT IDENTITY (1,1) NOT NULL PRIMARY KEY,
+    estado        VARCHAR(50)
 );
 
-INSERT INTO tbEstadoEnvios VALUES('Preparando'),('Recogiendo'),('Entregado'),('Cancelado');
+INSERT INTO tbEstadoEnvios
+VALUES ('Preparando'),
+       ('Recogiendo'),
+       ('Entregado'),
+       ('Cancelado');
 
 
 CREATE TABLE tbEnvios
 (
-    idEnvio      INT PRIMARY KEY IDENTITY (1,1),
-    idRepartidor INT,
-    idCarrito    INT,
-    costoEnvio   MONEY,
-    fechaEnvio   DATE,
-	pedidoListo  BIT,
-    activo       BIT,
-	idEstadoEnvio INT
+    idEnvio       INT PRIMARY KEY IDENTITY (1,1),
+    idRepartidor  INT,
+    idCarrito     INT,
+    costoEnvio    MONEY,
+    fechaEnvio    DATE,
+    pedidoListo   BIT,
+    activo        BIT,
+    idEstadoEnvio INT
 );
 GO
 
-ALTER TABLE tbEnvios ADD CONSTRAINT U_pedidoListo DEFAULT 0 FOR pedidoListo
+ALTER TABLE tbEnvios
+    ADD CONSTRAINT U_pedidoListo DEFAULT 0 FOR pedidoListo
 GO
 
 ALTER TABLE tbEnvios
