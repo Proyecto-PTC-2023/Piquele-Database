@@ -1,6 +1,6 @@
 -- USE master;
 -- DROP DATABASE dbPiquele;
--- CREATE DATABASE dbPiquele
+-- CREATE DATABASE dbPiquele;
 -- GO
 --USE dbPiquele
 -- GO
@@ -9,7 +9,7 @@ CREATE TABLE tbUsuarios
 (
     idUsuario          INT PRIMARY KEY IDENTITY (1,1),
     correoUsuario      VARCHAR(100) UNIQUE,
-    pass               CHAR(88),
+    pass               CHAR(600),
     verificacionEmail  BIT  DEFAULT 0,
     codigoVerificacion VARCHAR(255),
     registradoDesde    DATE DEFAULT GETDATE(),
@@ -21,12 +21,12 @@ GO
 
 CREATE TABLE tbClientes
 (
-    idCliente       INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    foto            VARBINARY(max)                 NULL,
-    nombreCliente   VARCHAR(150)                   NOT NULL,
-    duiCliente      VARCHAR(10)                    NOT NULL UNIQUE,
+    idCliente       INT IDENTITY (1,1) PRIMARY KEY,
+    foto            VARBINARY(max),
+    nombreCliente   VARCHAR(150),
+    duiCliente      VARCHAR(10) UNIQUE,
     fechaNacimiento DATE,
-    celular         VARCHAR(10)                    NOT NULL,
+    celular         VARCHAR(10),
     idUsuario       INT
 );
 GO
@@ -153,7 +153,7 @@ CREATE TABLE tbNegocios
     idNegocio          INT PRIMARY KEY IDENTITY (1,1),
     fotoNegocio        VARBINARY(max),
     nombreNegocio      VARCHAR(50),
-    cantidadSucursales INT DEFAULT 1,
+    cantidadSucursales INT  DEFAULT 1,
     idUsuario          INT,
     idCliente          INT,
     telefono           VARCHAR(10),
@@ -162,6 +162,7 @@ CREATE TABLE tbNegocios
     horaCierre         SMALLINT,
     direccionNegocio   VARCHAR(150),
     coordenadasNegocio VARCHAR(50),
+    fechaCreacion      DATE DEFAULT GETDATE(),
 );
 GO
 
@@ -420,28 +421,34 @@ BEGIN
 END
 GO
 
-CREATE TABLE tbEstadoEnvios(
-	idEstadoEnvio INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
-	estado VARCHAR(50)
+CREATE TABLE tbEstadoEnvios
+(
+    idEstadoEnvio INT IDENTITY (1,1) NOT NULL PRIMARY KEY,
+    estado        VARCHAR(50)
 );
 
-INSERT INTO tbEstadoEnvios VALUES('Preparando'),('Recogiendo'),('Entregado'),('Cancelado');
+INSERT INTO tbEstadoEnvios
+VALUES ('Preparando'),
+       ('Recogiendo'),
+       ('Entregado'),
+       ('Cancelado');
 
 
 CREATE TABLE tbEnvios
 (
-    idEnvio      INT PRIMARY KEY IDENTITY (1,1),
-    idRepartidor INT,
-    idCarrito    INT,
-    costoEnvio   MONEY,
-    fechaEnvio   DATE,
-	pedidoListo  BIT,
-    activo       BIT,
-	idEstadoEnvio INT
+    idEnvio       INT PRIMARY KEY IDENTITY (1,1),
+    idRepartidor  INT,
+    idCarrito     INT,
+    costoEnvio    MONEY,
+    fechaEnvio    DATE,
+    pedidoListo   BIT,
+    activo        BIT,
+    idEstadoEnvio INT
 );
 GO
 
-ALTER TABLE tbEnvios ADD CONSTRAINT U_pedidoListo DEFAULT 0 FOR pedidoListo
+ALTER TABLE tbEnvios
+    ADD CONSTRAINT U_pedidoListo DEFAULT 0 FOR pedidoListo
 GO
 
 ALTER TABLE tbEnvios
@@ -507,3 +514,31 @@ VALUES ('es',
         'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry''s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum',
         'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry''s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsu',
         'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry''s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsu');
+
+CREATE TABLE tbPiqueleEstado
+(
+    idPiqueleEstado INT IDENTITY (1, 1) PRIMARY KEY,
+    fecha           DATE,
+    visitas         INT DEFAULT 0,
+);
+GO
+
+-- sp to update the visits of the day
+CREATE PROCEDURE dbo.UpdateVisits
+AS
+BEGIN
+    DECLARE @today DATE = GETDATE();
+
+    IF NOT EXISTS (SELECT * FROM tbPiqueleEstado WHERE fecha = @today)
+        BEGIN
+            INSERT INTO tbPiqueleEstado (fecha, visitas)
+            VALUES (@today, 1);
+        END
+    ELSE
+        BEGIN
+            UPDATE tbPiqueleEstado
+            SET visitas = visitas + 1
+            WHERE fecha = @today;
+        END
+END
+GO
