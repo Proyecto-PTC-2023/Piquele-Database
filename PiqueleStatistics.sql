@@ -147,7 +147,7 @@ AS
 BEGIN
     DECLARE @appVisits INT;
 
-    SELECT @appVisits = COUNT(*)
+    SELECT @appVisits =  SUM(visitas)
     FROM tbPiqueleEstado
     WHERE @day = CONVERT(DATE, GETDATE());
 
@@ -161,7 +161,7 @@ AS
 BEGIN
     DECLARE @appVisits INT;
 
-    SELECT @appVisits = COUNT(*)
+    SELECT @appVisits = SUM(visitas)
     FROM tbPiqueleEstado;
 
     RETURN @appVisits;
