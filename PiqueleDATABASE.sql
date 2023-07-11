@@ -2,7 +2,7 @@
 -- DROP DATABASE dbPiquele;
 -- CREATE DATABASE dbPiquele;
 -- GO
--- USE dbPiquele
+--USE dbPiquele
 -- GO
 
 CREATE TABLE tbUsuarios
@@ -142,6 +142,11 @@ ALTER TABLE tbAdmins
         FOREIGN KEY (idUsuario)
             REFERENCES tbUsuarios (idUsuario)
 GO
+
+INSERT INTO tbUsuarios(correoUsuario, pass, registradoDesde) 
+VALUES('orellanaaguilara@gmail.com','oreo123',GETDATE());
+
+INSERT INTO tbAdmins(nombreAdministrador,idUsuario) VALUES('Adriana Orellana',1);
 
 CREATE TABLE tbNegocios
 (
