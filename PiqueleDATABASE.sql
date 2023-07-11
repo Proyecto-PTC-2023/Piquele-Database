@@ -71,7 +71,6 @@ CREATE TABLE tbRepartidores
 (
     idRepartidor             INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
     idUsuario                INT,
-    idCliente                INT,
     estado                   BIT  DEFAULT 0,
     idTipoTransporte         INT,
     numeroLicencia           VARCHAR(15),
@@ -90,12 +89,6 @@ ALTER TABLE tbRepartidores
     ADD CONSTRAINT FK_usuario_repartidor
         FOREIGN KEY (idUsuario)
             REFERENCES tbUsuarios (idUsuario)
-GO
-
-ALTER TABLE tbRepartidores
-    ADD CONSTRAINT FK_cliente_repartidor
-        FOREIGN KEY (idCliente)
-            REFERENCES tbClientes (idCliente)
 GO
 
 CREATE TABLE tbSolicitudRepartidor
@@ -155,7 +148,6 @@ CREATE TABLE tbNegocios
     nombreNegocio      VARCHAR(50),
     cantidadSucursales INT  DEFAULT 1,
     idUsuario          INT,
-    idCliente          INT,
     telefono           VARCHAR(10),
     correo             VARCHAR(100),
     horaApertura       SMALLINT,
@@ -170,12 +162,6 @@ ALTER TABLE tbNegocios
     ADD CONSTRAINT FK_usuario_Negocios
         FOREIGN KEY (idUsuario)
             REFERENCES tbUsuarios (idUsuario);
-GO
-
-ALTER TABLE tbNegocios
-    ADD CONSTRAINT FK_cliente_Negocios
-        FOREIGN KEY (idCliente)
-            REFERENCES tbClientes (idCliente);
 GO
 
 CREATE TABLE tbComentarios
