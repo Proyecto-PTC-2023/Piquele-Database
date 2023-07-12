@@ -22,7 +22,7 @@ GO
 CREATE TABLE tbClientes
 (
     idCliente       INT IDENTITY (1,1) PRIMARY KEY,
-    foto            VARBINARY(max),
+    foto            ,
     nombreCliente   VARCHAR(150),
     duiCliente      VARCHAR(10) UNIQUE,
     fechaNacimiento DATE,
