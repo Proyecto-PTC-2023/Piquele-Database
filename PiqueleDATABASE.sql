@@ -78,8 +78,8 @@ CREATE TABLE tbRepartidores
 );
 GO
 
-INSERT INTO tbRepartidores (idUsuario, idTipoTransporte, numeroLicencia, fechaVencimientoLicencia)
-VALUES (1, 1, '123456789', GETDATE());
+-- INSERT INTO tbRepartidores (idUsuario, idTipoTransporte, numeroLicencia, fechaVencimientoLicencia)
+-- VALUES (1, 1, '123456789', GETDATE());
 
 ALTER TABLE tbRepartidores
     ADD CONSTRAINT FK_tipo_transporte_repartidor
