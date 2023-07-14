@@ -1,18 +1,13 @@
 USE dbPiquele;
 GO
 
-
 -- Nuevas solicitudes de negocios
 CREATE TABLE tbGraficoNuevasSolicitudesNegocios
 (
     idtbGraficoNuevasSolicitudesNegocios INT IDENTITY (1, 1) PRIMARY KEY,
-    fecha                                DATE,
+    fecha                                VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
     conteo                               INT
 );
-GO
-
-
-CREATE INDEX IX_GraphData_Date ON tbGraficoNuevasSolicitudesNegocios (fecha);
 GO
 
 CREATE TRIGGER UpdateGraphData
@@ -147,7 +142,7 @@ AS
 BEGIN
     DECLARE @appVisits INT;
 
-    SELECT @appVisits =  SUM(visitas)
+    SELECT @appVisits = SUM(visitas)
     FROM tbPiqueleEstado
     WHERE @day = CONVERT(DATE, GETDATE());
 

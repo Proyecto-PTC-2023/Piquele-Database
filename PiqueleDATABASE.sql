@@ -2,40 +2,38 @@
 -- DROP DATABASE dbPiquele;
 -- CREATE DATABASE dbPiquele;
 -- GO
---USE dbPiquele
+-- USE dbPiquele
 -- GO
-
 CREATE TABLE tbUsuarios
 (
     idUsuario          INT PRIMARY KEY IDENTITY (1,1),
+    nombreUsuario      VARCHAR(150),
     correoUsuario      VARCHAR(100) UNIQUE,
     pass               CHAR(600),
-    verificacionEmail  BIT  DEFAULT 0,
+    verificacionEmail  BIT      DEFAULT 0,
     codigoVerificacion VARCHAR(255),
-    registradoDesde    DATE DEFAULT GETDATE(),
+    registradoDesde    VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
 );
 GO
-
--- Add registradoDesde
-
 
 CREATE TABLE tbClientes
 (
     idCliente       INT IDENTITY (1,1) PRIMARY KEY,
-    foto            VARBINARY(max),
-    nombreCliente   VARCHAR(150),
+    foto            VARCHAR(MAX),
     duiCliente      VARCHAR(10) UNIQUE,
-    fechaNacimiento DATE,
+    fechaNacimiento VARCHAR(MAX),
     celular         VARCHAR(10),
     idUsuario       INT
 );
 GO
+
 
 ALTER TABLE tbClientes
     ADD CONSTRAINT FK_usuario_cliente
         FOREIGN KEY (idUsuario)
             REFERENCES tbUsuarios (idUsuario)
 GO
+
 
 CREATE TABLE tbDireccionesCliente
 (
@@ -71,14 +69,17 @@ CREATE TABLE tbRepartidores
 (
     idRepartidor             INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
     idUsuario                INT,
-    estado                   BIT  DEFAULT 0,
+    estado                   BIT          DEFAULT 0,
     idTipoTransporte         INT,
     numeroLicencia           VARCHAR(15),
-    fechaVencimientoLicencia DATE,
-    autorizado               BIT  DEFAULT 0,
-    autorizadoDesde          DATE DEFAULT GETDATE(),
+    fechaVencimientoLicencia VARCHAR(MAX),
+    autorizado               BIT          DEFAULT 0,
+    autorizadoDesde          VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
 );
 GO
+
+INSERT INTO tbRepartidores (idUsuario, idTipoTransporte, numeroLicencia, fechaVencimientoLicencia)
+VALUES (1, 1, '123456789', GETDATE());
 
 ALTER TABLE tbRepartidores
     ADD CONSTRAINT FK_tipo_transporte_repartidor
@@ -95,8 +96,8 @@ CREATE TABLE tbSolicitudRepartidor
 (
     idSolicitudRepartidor INT PRIMARY KEY IDENTITY (1,1),
     idRepartidor          INT,
-    fechaSolicitud        DATE,
-    fechaRespuesta        DATE,
+    fechaSolicitud        VARCHAR(MAX),
+    fechaRespuesta        VARCHAR(MAX),
     respuesta             BIT DEFAULT 0,
     observaciones         VARCHAR(200)
 );
@@ -123,12 +124,12 @@ GO
 
 CREATE TABLE tbAdmins
 (
-    idAdmin             INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    nombreAdministrador VARCHAR(150)                   NOT NULL,
-    fechaCreacion       DATE DEFAULT GETDATE(),
-    idUsuario           INT
+    idAdmin       INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
+    fechaCreacion VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
+    idUsuario     INT
 );
 GO
+
 
 ALTER TABLE tbAdmins
     ADD CONSTRAINT FK_usuario_admin
@@ -136,17 +137,18 @@ ALTER TABLE tbAdmins
             REFERENCES tbUsuarios (idUsuario)
 GO
 
-INSERT INTO tbUsuarios(correoUsuario, pass, registradoDesde) 
-VALUES('orellanaaguilara@gmail.com','oreo123',GETDATE());
+INSERT INTO tbUsuarios(correoUsuario, nombreUsuario, pass, registradoDesde)
+VALUES ('orellanaaguilara@gmail.com', 'Adriana Orellana', 'oreo123', GETDATE());
 
-INSERT INTO tbAdmins(nombreAdministrador,idUsuario) VALUES('Adriana Orellana',1);
+INSERT INTO tbAdmins(idUsuario)
+VALUES (1);
 
 CREATE TABLE tbNegocios
 (
     idNegocio          INT PRIMARY KEY IDENTITY (1,1),
     fotoNegocio        VARBINARY(max),
     nombreNegocio      VARCHAR(50),
-    cantidadSucursales INT  DEFAULT 1,
+    cantidadSucursales INT          DEFAULT 1,
     idUsuario          INT,
     telefono           VARCHAR(10),
     correo             VARCHAR(100),
@@ -154,7 +156,7 @@ CREATE TABLE tbNegocios
     horaCierre         SMALLINT,
     direccionNegocio   VARCHAR(150),
     coordenadasNegocio VARCHAR(50),
-    fechaCreacion      DATE DEFAULT GETDATE(),
+    fechaCreacion      VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
 );
 GO
 
@@ -170,7 +172,7 @@ CREATE TABLE tbComentarios
     idCliente        INT,
     idNegocio        INT,
     comentario       VARCHAR(200),
-    fecha            DATE,
+    fecha            VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
     calificacionDada FLOAT
 );
 GO
@@ -309,9 +311,9 @@ CREATE TABLE tbCarritos
     idCarrito INT PRIMARY KEY IDENTITY (1,1),
     idCliente INT,
     idNegocio INT,
-    date      DATE DEFAULT GETDATE(),
-    activo    BIT  DEFAULT 1,
-    enviado   BIT  DEFAULT 0,
+    date      VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
+    activo    BIT          DEFAULT 1,
+    enviado   BIT          DEFAULT 0,
 );
 GO
 
@@ -426,7 +428,7 @@ CREATE TABLE tbEnvios
     idRepartidor  INT,
     idCarrito     INT,
     costoEnvio    MONEY,
-    fechaEnvio    DATE,
+    fechaEnvio    VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
     pedidoListo   BIT,
     activo        BIT,
     idEstadoEnvio INT
@@ -464,14 +466,14 @@ GO
 CREATE TABLE tbSolicitudesNegocios
 (
     idSolicitud           INT IDENTITY (1,1) PRIMARY KEY NOT NULL,
-    solicitud             BIT DEFAULT 0,
+    solicitud             BIT          DEFAULT 0,
     nombreNegocio         VARCHAR(100),
     especialidadesNegocio VARCHAR(100),
-    cantidadSucursales    INT DEFAULT 1,
+    cantidadSucursales    INT          DEFAULT 1,
     nombrePropietario     VARCHAR(50),
     telefono              VARCHAR(10),
     email                 VARCHAR(100),
-    fechaSolicitud        DATE,
+    fechaSolicitud        VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
     horaApertura          TIME,
     horaCierre            TIME,
     imagenNegocio         VARBINARY(MAX),
@@ -504,8 +506,8 @@ VALUES ('es',
 CREATE TABLE tbPiqueleEstado
 (
     idPiqueleEstado INT IDENTITY (1, 1) PRIMARY KEY,
-    fecha           DATE,
-    visitas         INT DEFAULT 0,
+    fecha           VARCHAR(MAX) DEFAULT (CONVERT(VARCHAR(10), GETDATE(), 103)),
+    visitas         INT          DEFAULT 0,
 );
 GO
 
@@ -513,7 +515,7 @@ GO
 CREATE PROCEDURE dbo.UpdateVisits
 AS
 BEGIN
-    DECLARE @today DATE = GETDATE();
+    DECLARE @today DATE = (CONVERT(VARCHAR(10), GETDATE(), 103));
 
     IF NOT EXISTS (SELECT * FROM tbPiqueleEstado WHERE fecha = @today)
         BEGIN
